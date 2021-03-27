@@ -8,7 +8,7 @@ const createTables = () => {
         commentable_id INT NOT NULL,
         name VARCHAR NOT NULL,
         email VARCHAR NOT NULL,
-        body text,
+        body text NOT NULL,
         parent_comment_id uuid,
         created_at TIMESTAMP DEFAULT now(),
         deleted_at TIMESTAMP,
@@ -21,11 +21,11 @@ const createTables = () => {
   db.pool
     .query(commentsTable)
     .then((res) => {
-      console.log(res);
+      console.log('1',res);
       db.pool.end();
     })
     .catch((err) => {
-      console.log(err);
+      console.log('2',err);
       db.pool.end();
     });
 };
