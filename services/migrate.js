@@ -9,6 +9,7 @@ const createTables = () => {
         name VARCHAR NOT NULL,
         email VARCHAR NOT NULL,
         body text NOT NULL,
+        rating INT CHECK (rating >= 1 AND rating <=5),
         parent_comment_id uuid,
         created_at TIMESTAMP DEFAULT now(),
         deleted_at TIMESTAMP,
