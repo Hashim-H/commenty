@@ -1,22 +1,38 @@
 const express = require("express");
 const router = express.Router();
-const controllers = require("./../controllers/index");
+const api = require("./../controllers/index");
 
 //Routes Here
 
 //Create a Comment
-router.post("/comment", controllers.create);
+router.post("/comment", api.create);
 
 //Get Comments By Key
-router.get("/comment/list/:key", controllers.listKey);
+router.get("/comment/list/:key", api.listKey);
 
 //Get Comments By Key & ID
-router.get("/comment/list/:key/:id", controllers.listKeyId);
+router.get("/comment/list/:key/:id", api.listKeyId);
 
 //Get Replies
-router.get("/comment/:uuid/replies", controllers.listReplies);
+router.get("/comment/:uuid/replies", api.listReplies);
 
 //Filter By
-router.get("/comment/:key/filter", controllers.filter);
+router.get("/comment/:key/filter", api.filter);
+
+//Show Stats
+router.get("/stats", api.getStats);
+
+// blocked
+router.post("/comment/:uuid/block", api.block);
+
+//latest
+router.get("/comment/latest", api.latest);
+
+//admin filter
+
+router.get("/comment/adminFilter", api.adminFilter);
+
+//delete
+router.delete("/comment/:uuid/", api.deleteComment);
 
 module.exports = router;

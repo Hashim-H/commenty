@@ -1,6 +1,5 @@
-const { body, validationResult, check } = require("express-validator");
+const { body, validationResult, check, param } = require("express-validator");
 const db = require("../services/db.js");
-const comment = require("../models/comment.js");
 const checkComment = require("../services/checkComment.js");
 const { v4: uuidv4 } = require("uuid");
 
@@ -10,7 +9,14 @@ exports.create = async (req, res) => {
   await check("commentableKey").notEmpty().isAlphanumeric().run(req);
   await check("commentableId").notEmpty().isInt().run(req);
   await check("name").notEmpty().isAlphanumeric().isLength({ min: 3 }).run(req);
-  await check("email").notEmpty().isEmail().run(req);
+  await check("email")
+    .notEmpty()
+    .isEmail()
+    .custom((email) => {
+      return checkComment.checkUserAllowed(email, req.body.commentableKey);
+    })
+    .run(req);
+  console.log("after valid");
   await check("body").notEmpty().run(req);
   await check("rating")
     .optional({
@@ -21,7 +27,7 @@ exports.create = async (req, res) => {
   await check("parentCommentId")
     .optional({
       nullable: true,
-      checkFalsy: true,
+      checkFalsy: false,
     })
     .isUUID()
     .bail()
@@ -173,5 +179,152 @@ exports.filter = async (req, res) => {
     .catch((err) => {
       console.log(err);
       return res.status(400).json({ errors: ["Invalid input"] });
+    });
+};
+
+//Stats
+
+exports.getStats = async (req, res) => {
+  db.pool
+    .query(
+      `SELECT COUNT(comment_id), 'top_level' as type FROM comments WHERE parent_comment_id IS NULL
+        UNION
+        SELECT COUNT(comment_id), 'replies' as type FROM comments WHERE parent_comment_id IS NOT NULL
+        UNION
+        SELECT COUNT(DISTINCT commentable_key), 'partners' as type FROM comments;
+    `
+    )
+    .then((data) => {
+      let result = {};
+      data.rows.forEach((element) => {
+        result[element.type] = element.count;
+      });
+      return res.status(200).json(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(400).json({ errors: [err] });
+    });
+};
+
+// BLOCK
+exports.block = async (req, res) => {
+  await check("uuid") // in params
+    .notEmpty()
+    .isUUID()
+    .custom(checkComment.checkCommentExists)
+    .run(req);
+  const answer = validationResult(req);
+  if (!answer.isEmpty()) {
+    return res.status(400).json({ errors: answer.mapped() });
+  }
+  let data = await db.pool.query(
+    `SELECT commentable_key, email FROM comments WHERE comment_id = $1
+    `,
+    [req.params.uuid]
+  );
+
+  db.pool
+    .query(
+      `INSERT INTO blocked_users (
+        commentable_key,
+        email
+  ) VALUES ( $1, $2 )
+  `,
+      [data.rows[0].commentable_key, data.rows[0].email]
+    )
+    .then((data) => {
+      return res.status(200).json({ status: true });
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(500).json({ errors: err });
+    });
+};
+
+// latest comment
+
+exports.latest = async (req, res) => {
+  db.pool
+    .query(
+      `SELECT * FROM comments ORDER BY created_at DESC LIMIT 5;
+    `
+    )
+    .then((data) => {
+      return res.status(200).json({ comments: data.rows });
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(500).json({ errors: [err] });
+    });
+};
+
+exports.adminFilter = async (req, res) => {
+  let query = req.query;
+  let base = "";
+  let values = [];
+  let i = 1;
+
+  if ("rating_from" in query) {
+    base += " AND rating >= $" + i++;
+    values.push(query.rating_from);
+  }
+
+  if ("rating_to" in query) {
+    base += " AND rating <= $" + i++;
+    values.push(query.rating_to);
+  }
+  if ("date_from" in query) {
+    base += " AND created_at >= $" + i++;
+    values.push(query.date_from);
+  }
+
+  if ("date_to" in query) {
+    base += " AND created_at <= $" + i++;
+    values.push(query.date_to);
+  }
+  if ("commentable_key" in query) {
+    base += " AND commentable_key = $" + i++;
+    values.push(query.commentable_key);
+  }
+  db.pool
+    .query(
+      `SELECT * FROM comments  WHERE 1=1 ${base} ;
+    `,
+      values
+    )
+    .then((data) => {
+      return res.status(200).json({ comments: data.rows });
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(500).json({ errors: [err] });
+    });
+};
+
+//delete
+
+exports.deleteComment = async (req, res) => {
+  await param("uuid") // in params
+    .notEmpty()
+    .isUUID()
+    .custom(checkComment.checkCommentExists)
+    .run(req);
+  const answer = validationResult(req);
+  if (!answer.isEmpty()) {
+    return res.status(400).json({ errors: answer.mapped() });
+  }
+  db.pool
+    .query(
+      `DELETE FROM comments WHERE comment_id = $1
+  `,
+      [req.params.uuid]
+    )
+    .then((data) => {
+      return res.status(200).json({ status: true });
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(500).json({ errors: err });
     });
 };

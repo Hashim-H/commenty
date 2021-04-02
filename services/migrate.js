@@ -12,21 +12,26 @@ const createTables = () => {
         rating INT CHECK (rating >= 1 AND rating <=5),
         parent_comment_id uuid,
         created_at TIMESTAMP DEFAULT now(),
-        deleted_at TIMESTAMP,
         PRIMARY KEY (comment_id),
         CONSTRAINT fk_parent_comment_id
         FOREIGN KEY(parent_comment_id) 
         REFERENCES comments(comment_id)
         ON DELETE CASCADE
-      )`;
+      );
+      
+      CREATE TABLE IF NOT EXISTS "blocked_users" (
+        "commentable_key" VARCHAR NOT NULL,
+        "email" VARCHAR NOT NULL,
+        PRIMARY KEY ("commentable_key", "email")
+      );`;
   db.pool
     .query(commentsTable)
     .then((res) => {
-      console.log('1',res);
+      console.log("1", res);
       db.pool.end();
     })
     .catch((err) => {
-      console.log('2',err);
+      console.log("2", err);
       db.pool.end();
     });
 };
