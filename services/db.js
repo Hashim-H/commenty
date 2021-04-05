@@ -7,6 +7,9 @@ const config = {
   database: process.env.dbDatabase,
   password: process.env.dbPassword,
   port: process.env.dbPort,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 };
 
 const pool = new pg.Pool(config);
