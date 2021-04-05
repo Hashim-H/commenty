@@ -35,4 +35,8 @@ router.get("/comment/adminFilter", api.adminFilter);
 //delete
 router.delete("/comment/:uuid/", api.deleteComment);
 
+//list commentable keys
+router.get("/getKeys", api.getUniqueKeys);
+
+
 module.exports = router;

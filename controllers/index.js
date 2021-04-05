@@ -187,7 +187,7 @@ exports.filter = async (req, res) => {
 exports.getStats = async (req, res) => {
   db.pool
     .query(
-      `SELECT COUNT(comment_id), 'top_level' as type FROM comments WHERE parent_comment_id IS NULL
+      `SELECT COUNT(comment_id), 'comments' as type FROM comments WHERE parent_comment_id IS NULL
         UNION
         SELECT COUNT(comment_id), 'replies' as type FROM comments WHERE parent_comment_id IS NOT NULL
         UNION
@@ -326,5 +326,23 @@ exports.deleteComment = async (req, res) => {
     .catch((err) => {
       console.log(err);
       return res.status(500).json({ errors: err });
+    });
+};
+
+
+//list commentable key
+
+exports.getUniqueKeys = async (req, res) => {
+  db.pool
+    .query(
+      `SELECT DISTINCT commentable_key FROM comments;
+    `
+    )
+    .then((data) => {
+      return res.status(200).json({ comments: data.rows });
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(500).json({ errors: [err] });
     });
 };

@@ -3,12 +3,13 @@ const bodyParser = require("body-parser");
 const logger = require("morgan");
 require("dotenv").config();
 
-
 const app = express();
 const PORT = process.env.PORT || 8000;
 const NODE_ENV = process.env.NODE_ENV || "development";
+const cors = require("cors");
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use(logger("dev"));
 app.set("env", NODE_ENV);
 app.set("port", PORT);
@@ -17,6 +18,7 @@ app.use(
     extended: true,
   })
 );
+
 app.use("/", require("./routes")); // for routes
 
 app.use((req, res, next) => {
@@ -46,7 +48,6 @@ app.use((err, req, res, next) => {
     },
   });
 });
-
 
 app.listen(PORT, () => {
   console.log(
