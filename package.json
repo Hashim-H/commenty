@@ -10,8 +10,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "create": "node ./services/migrate createTables",
-    "heroku-prebuild": "node ./services/migrate createTables"
+    "create": "node ./services/migrate createTables"
   },
   "author": "Hashim Haider",
   "license": "ISC",
